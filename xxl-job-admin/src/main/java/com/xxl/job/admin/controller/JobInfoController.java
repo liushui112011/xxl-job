@@ -104,6 +104,12 @@ public class JobInfoController {
 	public ReturnT<String> add(XxlJobInfo jobInfo) {
 		return xxlJobService.add(jobInfo);
 	}
+
+	@RequestMapping("/addJob")
+	@ResponseBody
+	public ReturnT<String> addJob(XxlJobInfo jobInfo) {
+		return xxlJobService.add(jobInfo);
+	}
 	
 	@RequestMapping("/update")
 	@ResponseBody

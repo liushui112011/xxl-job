@@ -74,6 +74,9 @@
 			<version>${project.parent.version}</version>
 		</dependency>
 
+		<!-- https://mvnrepository.com/artifact/com.alibaba/fastjson -->
+
+
 	</dependencies>
 
 	<build>

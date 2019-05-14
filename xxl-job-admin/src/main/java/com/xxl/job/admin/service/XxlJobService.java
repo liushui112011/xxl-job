@@ -36,6 +36,15 @@ public interface XxlJobService {
 	public ReturnT<String> add(XxlJobInfo jobInfo);
 
 	/**
+	 * 针对JourneyBuilder， job添加
+	 * add  job, default quartz stop
+	 *
+	 * @param
+	 * @return
+	 */
+	 public ReturnT<String> addJob(String jobName,String controllerCode,String cronExprress,String params);
+
+	/**
 	 * update job, update quartz-cron if started
 	 *
 	 * @param jobInfo

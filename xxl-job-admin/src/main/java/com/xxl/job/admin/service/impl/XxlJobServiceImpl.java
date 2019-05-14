@@ -1,5 +1,6 @@
 package com.xxl.job.admin.service.impl;
 
+import com.xxl.job.admin.core.conf.XxlJobAdminConfig;
 import com.xxl.job.admin.core.model.XxlJobGroup;
 import com.xxl.job.admin.core.model.XxlJobInfo;
 import com.xxl.job.admin.core.route.ExecutorRouteStrategyEnum;
@@ -14,6 +15,7 @@ import com.xxl.job.core.biz.model.ReturnT;
 import com.xxl.job.core.enums.ExecutorBlockStrategyEnum;
 import com.xxl.job.core.glue.GlueTypeEnum;
 import com.xxl.job.core.util.DateUtil;
+import org.apache.ibatis.annotations.Param;
 import org.quartz.CronExpression;
 import org.quartz.SchedulerException;
 import org.slf4j.Logger;
@@ -130,6 +132,92 @@ public class XxlJobServiceImpl implements XxlJobService {
 
 		return new ReturnT<String>(String.valueOf(jobInfo.getId()));
 	}
+
+	@Override
+	public ReturnT<String> addJob(String jobName,String controllerCode, String cronExprress, String params) {
+		// valid
+//		XxlJobGroup group = xxlJobGroupDao.load(jobInfo.getJobGroup());
+		XxlJobGroup group = xxlJobGroupDao.selectByName(controllerCode);
+		if (group == null) {
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_choose")+I18nUtil.getString("jobinfo_field_jobgroup")) );
+		}
+		if (!CronExpression.isValidExpression(cronExprress)) {
+			return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("jobinfo_field_cron_unvalid") );
+		}
+		if (jobName==null ||jobName.trim().length()==0) {
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_jobdesc")) );
+		}
+		if (XxlJobAdminConfig.getAdminConfig().getAuthor() ==null || XxlJobAdminConfig.getAdminConfig().getAuthor().trim().length()==0) {
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_author")) );
+		}
+		if (ExecutorRouteStrategyEnum.match(XxlJobAdminConfig.getAdminConfig().getExecutorRouteStrategy(), null) == null) {
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_executorRouteStrategy")+I18nUtil.getString("system_unvalid")) );
+		}
+		if (ExecutorBlockStrategyEnum.match(XxlJobAdminConfig.getAdminConfig().getExecutorBlockStrategy(), null) == null) {
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_executorBlockStrategy")+I18nUtil.getString("system_unvalid")) );
+		}
+		if (GlueTypeEnum.match(XxlJobAdminConfig.getAdminConfig().getGlueType()) == null) {
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_gluetype")+I18nUtil.getString("system_unvalid")) );
+		}
+		//此处将 Handler 同 执行器名称设定为同一个
+		if (GlueTypeEnum.BEAN==GlueTypeEnum.match(XxlJobAdminConfig.getAdminConfig().getGlueType()) && (controllerCode==null || controllerCode.trim().length()==0) ) {
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input")+"JobHandler") );
+		}
+
+		// fix "\r" in shell
+		/**
+		if (GlueTypeEnum.GLUE_SHELL==GlueTypeEnum.match(jobInfo.getGlueType()) && jobInfo.getGlueSource()!=null) {
+			jobInfo.setGlueSource(jobInfo.getGlueSource().replaceAll("\r", ""));
+		}
+
+		// ChildJobId valid
+		if (jobInfo.getChildJobId()!=null && jobInfo.getChildJobId().trim().length()>0) {
+			String[] childJobIds = jobInfo.getChildJobId().split(",");
+			for (String childJobIdItem: childJobIds) {
+				if (childJobIdItem!=null && childJobIdItem.trim().length()>0 && isNumeric(childJobIdItem)) {
+					XxlJobInfo childJobInfo = xxlJobInfoDao.loadById(Integer.valueOf(childJobIdItem));
+					if (childJobInfo==null) {
+						return new ReturnT<String>(ReturnT.FAIL_CODE,
+								MessageFormat.format((I18nUtil.getString("jobinfo_field_childJobId")+"({0})"+I18nUtil.getString("system_not_found")), childJobIdItem));
+					}
+				} else {
+					return new ReturnT<String>(ReturnT.FAIL_CODE,
+							MessageFormat.format((I18nUtil.getString("jobinfo_field_childJobId")+"({0})"+I18nUtil.getString("system_unvalid")), childJobIdItem));
+				}
+			}
+
+			String temp = "";	// join ,
+			for (String item:childJobIds) {
+				temp += item + ",";
+			}
+			temp = temp.substring(0, temp.length()-1);
+
+			jobInfo.setChildJobId(temp);
+		}
+		*/
+		//生成JobInfo所需信息
+		XxlJobInfo jobInfo = new XxlJobInfo();
+		jobInfo.setAlarmEmail(XxlJobAdminConfig.getAdminConfig().getAlterEmail());
+		jobInfo.setJobGroup(group.getId());
+		jobInfo.setAuthor(XxlJobAdminConfig.getAdminConfig().getAuthor());
+		jobInfo.setExecutorBlockStrategy(XxlJobAdminConfig.getAdminConfig().getExecutorBlockStrategy());
+		jobInfo.setExecutorRouteStrategy(XxlJobAdminConfig.getAdminConfig().getExecutorRouteStrategy());
+		jobInfo.setExecutorHandler(controllerCode);
+		jobInfo.setGlueType(XxlJobAdminConfig.getAdminConfig().getGlueType());
+		jobInfo.setExecutorParam(params);
+		jobInfo.setJobCron(cronExprress);
+		jobInfo.setJobDesc(jobName);
+
+		// add in db
+		xxlJobInfoDao.save(jobInfo);
+		if (jobInfo.getId() < 1) {
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_add")+I18nUtil.getString("system_fail")) );
+		}
+
+		return new ReturnT<String>(String.valueOf(jobInfo.getId()));
+	}
+
+
 
 	private boolean isNumeric(String str){
 		try {

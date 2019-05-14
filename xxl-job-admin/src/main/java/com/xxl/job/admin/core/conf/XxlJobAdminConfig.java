@@ -39,6 +39,20 @@ public class XxlJobAdminConfig implements InitializingBean{
     @Value("${spring.mail.username}")
     private String emailUserName;
 
+    @Value("${xxl.job.default.author}")
+    private String author;
+
+    @Value("${xxl.job.default.executorRouteStrategy}")
+    private String executorRouteStrategy;
+
+    @Value("${xxl.job.default.executorBlockStrategy}")
+    private String executorBlockStrategy;
+
+    @Value("${xxl.job.default.glueType}")
+    private String glueType;
+
+    @Value("${xxl.job.default.alterEmail}")
+    private String alterEmail;
     // dao, service
 
     @Resource
@@ -67,6 +81,25 @@ public class XxlJobAdminConfig implements InitializingBean{
         return emailUserName;
     }
 
+    public String getAuthor(){
+        return author;
+    }
+
+    public String getExecutorRouteStrategy(){
+        return executorRouteStrategy;
+    }
+
+    public String getExecutorBlockStrategy(){
+        return  executorBlockStrategy;
+    }
+
+    public String getGlueType(){
+        return glueType;
+    }
+
+    public String getAlterEmail(){
+        return alterEmail;
+    }
     public XxlJobLogDao getXxlJobLogDao() {
         return xxlJobLogDao;
     }
@@ -90,5 +123,4 @@ public class XxlJobAdminConfig implements InitializingBean{
     public JavaMailSender getMailSender() {
         return mailSender;
     }
-
 }
