@@ -1,5 +1,6 @@
 package com.xxl.job.admin.controller;
 
+import com.alibaba.fastjson.JSONObject;
 import com.xxl.job.admin.core.exception.XxlJobException;
 import com.xxl.job.admin.core.model.XxlJobGroup;
 import com.xxl.job.admin.core.model.XxlJobInfo;
@@ -16,6 +17,7 @@ import com.xxl.job.core.enums.ExecutorBlockStrategyEnum;
 import com.xxl.job.core.glue.GlueTypeEnum;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -107,8 +109,8 @@ public class JobInfoController {
 
 	@RequestMapping("/addJob")
 	@ResponseBody
-	public ReturnT<String> addJob(XxlJobInfo jobInfo) {
-		return xxlJobService.add(jobInfo);
+	public JSONObject addJob(@RequestBody JSONObject jobInfo) {
+		return xxlJobService.addJob(jobInfo);
 	}
 	
 	@RequestMapping("/update")

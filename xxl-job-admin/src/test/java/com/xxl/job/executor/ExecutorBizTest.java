@@ -57,7 +57,7 @@ public class ExecutorBizTest {
                 ExecutorBiz.class,
                 null,
                 10000,
-                "127.0.0.1:9999",
+                "127.0.0.1:8080",
                 null,
                 null,
                 null).getObject();

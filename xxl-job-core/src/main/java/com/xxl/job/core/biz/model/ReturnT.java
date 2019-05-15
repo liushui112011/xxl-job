@@ -30,8 +30,6 @@ public class ReturnT<T> implements Serializable {
 		this.content = content;
 	}
 
-
-	
 	public int getCode() {
 		return code;
 	}

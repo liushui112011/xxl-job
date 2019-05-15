@@ -1,6 +1,7 @@
 package com.xxl.job.admin.service;
 
 
+import com.alibaba.fastjson.JSONObject;
 import com.xxl.job.admin.core.model.XxlJobInfo;
 import com.xxl.job.core.biz.model.ReturnT;
 
@@ -42,7 +43,7 @@ public interface XxlJobService {
 	 * @param
 	 * @return
 	 */
-	 public ReturnT<String> addJob(String jobName,String controllerCode,String cronExprress,String params);
+	 public JSONObject addJob(JSONObject job);
 
 	/**
 	 * update job, update quartz-cron if started

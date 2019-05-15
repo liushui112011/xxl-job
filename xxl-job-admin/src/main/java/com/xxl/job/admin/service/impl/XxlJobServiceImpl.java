@@ -1,5 +1,6 @@
 package com.xxl.job.admin.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.xxl.job.admin.core.conf.XxlJobAdminConfig;
 import com.xxl.job.admin.core.model.XxlJobGroup;
 import com.xxl.job.admin.core.model.XxlJobInfo;
@@ -11,6 +12,7 @@ import com.xxl.job.admin.dao.XxlJobInfoDao;
 import com.xxl.job.admin.dao.XxlJobLogDao;
 import com.xxl.job.admin.dao.XxlJobLogGlueDao;
 import com.xxl.job.admin.service.XxlJobService;
+import com.xxl.job.core.biz.model.ReturnJson;
 import com.xxl.job.core.biz.model.ReturnT;
 import com.xxl.job.core.enums.ExecutorBlockStrategyEnum;
 import com.xxl.job.core.glue.GlueTypeEnum;
@@ -134,67 +136,45 @@ public class XxlJobServiceImpl implements XxlJobService {
 	}
 
 	@Override
-	public ReturnT<String> addJob(String jobName,String controllerCode, String cronExprress, String params) {
-		// valid
-//		XxlJobGroup group = xxlJobGroupDao.load(jobInfo.getJobGroup());
+	public JSONObject addJob(JSONObject job) {
+		//获取请求参数
+		String controllerCode = job.getString("controllerCode");
+		String cronExprress = job.getString("cronExprress");
+		String jobName = job.getString("jobName");
+		String params  = job.getString("params");
+
+		if (params == null){
+			return new ReturnJson(ReturnJson.FAIL_CODE,(I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_executorparam")) ).toJson();
+		}
+
 		XxlJobGroup group = xxlJobGroupDao.selectByName(controllerCode);
 		if (group == null) {
-			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_choose")+I18nUtil.getString("jobinfo_field_jobgroup")) );
+			return new ReturnJson(ReturnJson.FAIL_CODE, (I18nUtil.getString("system_please_choose")+I18nUtil.getString("jobinfo_field_jobgroup"))).toJson();
 		}
 		if (!CronExpression.isValidExpression(cronExprress)) {
-			return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("jobinfo_field_cron_unvalid") );
+			return new ReturnJson(ReturnJson.FAIL_CODE, I18nUtil.getString("jobinfo_field_cron_unvalid") ).toJson();
 		}
 		if (jobName==null ||jobName.trim().length()==0) {
-			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_jobdesc")) );
+			return new ReturnJson(ReturnJson.FAIL_CODE, (I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_jobdesc")) ).toJson();
 		}
 		if (XxlJobAdminConfig.getAdminConfig().getAuthor() ==null || XxlJobAdminConfig.getAdminConfig().getAuthor().trim().length()==0) {
-			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_author")) );
+			return new ReturnJson(ReturnJson.FAIL_CODE, (I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_author")) ).toJson();
 		}
 		if (ExecutorRouteStrategyEnum.match(XxlJobAdminConfig.getAdminConfig().getExecutorRouteStrategy(), null) == null) {
-			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_executorRouteStrategy")+I18nUtil.getString("system_unvalid")) );
+			return new ReturnJson(ReturnJson.FAIL_CODE, (I18nUtil.getString("jobinfo_field_executorRouteStrategy")+I18nUtil.getString("system_unvalid")) ).toJson();
 		}
 		if (ExecutorBlockStrategyEnum.match(XxlJobAdminConfig.getAdminConfig().getExecutorBlockStrategy(), null) == null) {
-			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_executorBlockStrategy")+I18nUtil.getString("system_unvalid")) );
+			return new ReturnJson(ReturnJson.FAIL_CODE, (I18nUtil.getString("jobinfo_field_executorBlockStrategy")+I18nUtil.getString("system_unvalid")) ).toJson();
 		}
 		if (GlueTypeEnum.match(XxlJobAdminConfig.getAdminConfig().getGlueType()) == null) {
-			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_gluetype")+I18nUtil.getString("system_unvalid")) );
+			return new ReturnJson(ReturnJson.FAIL_CODE, (I18nUtil.getString("jobinfo_field_gluetype")+I18nUtil.getString("system_unvalid")) ).toJson();
 		}
 		//此处将 Handler 同 执行器名称设定为同一个
 		if (GlueTypeEnum.BEAN==GlueTypeEnum.match(XxlJobAdminConfig.getAdminConfig().getGlueType()) && (controllerCode==null || controllerCode.trim().length()==0) ) {
-			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input")+"JobHandler") );
+			return new ReturnJson(ReturnJson.FAIL_CODE, (I18nUtil.getString("system_please_input")+"JobHandler") ).toJson();
 		}
 
-		// fix "\r" in shell
-		/**
-		if (GlueTypeEnum.GLUE_SHELL==GlueTypeEnum.match(jobInfo.getGlueType()) && jobInfo.getGlueSource()!=null) {
-			jobInfo.setGlueSource(jobInfo.getGlueSource().replaceAll("\r", ""));
-		}
 
-		// ChildJobId valid
-		if (jobInfo.getChildJobId()!=null && jobInfo.getChildJobId().trim().length()>0) {
-			String[] childJobIds = jobInfo.getChildJobId().split(",");
-			for (String childJobIdItem: childJobIds) {
-				if (childJobIdItem!=null && childJobIdItem.trim().length()>0 && isNumeric(childJobIdItem)) {
-					XxlJobInfo childJobInfo = xxlJobInfoDao.loadById(Integer.valueOf(childJobIdItem));
-					if (childJobInfo==null) {
-						return new ReturnT<String>(ReturnT.FAIL_CODE,
-								MessageFormat.format((I18nUtil.getString("jobinfo_field_childJobId")+"({0})"+I18nUtil.getString("system_not_found")), childJobIdItem));
-					}
-				} else {
-					return new ReturnT<String>(ReturnT.FAIL_CODE,
-							MessageFormat.format((I18nUtil.getString("jobinfo_field_childJobId")+"({0})"+I18nUtil.getString("system_unvalid")), childJobIdItem));
-				}
-			}
-
-			String temp = "";	// join ,
-			for (String item:childJobIds) {
-				temp += item + ",";
-			}
-			temp = temp.substring(0, temp.length()-1);
-
-			jobInfo.setChildJobId(temp);
-		}
-		*/
 		//生成JobInfo所需信息
 		XxlJobInfo jobInfo = new XxlJobInfo();
 		jobInfo.setAlarmEmail(XxlJobAdminConfig.getAdminConfig().getAlterEmail());
@@ -211,11 +191,13 @@ public class XxlJobServiceImpl implements XxlJobService {
 		// add in db
 		xxlJobInfoDao.save(jobInfo);
 		if (jobInfo.getId() < 1) {
-			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_add")+I18nUtil.getString("system_fail")) );
+			return new ReturnJson(ReturnJson.FAIL_CODE, (I18nUtil.getString("jobinfo_field_add")+I18nUtil.getString("system_fail"))).toJson();
 		}
-
-		return new ReturnT<String>(String.valueOf(jobInfo.getId()));
+		//返回的msg
+		return new ReturnJson(String.valueOf(jobInfo.getId())).toJson();
 	}
+
+
 
 
 
