@@ -138,8 +138,8 @@ public class XxlJobServiceImpl implements XxlJobService {
 	@Override
 	public JSONObject addJob(JSONObject job) {
 		//获取请求参数
-		String controllerCode = job.getString("controllerCode");
-		String cronExprress = job.getString("cronExprress");
+		String controllerCode = job.getString("executor");
+		String cronExprress = job.getString("cronExpress");
 		String jobName = job.getString("jobName");
 		String params  = job.getString("params");
 

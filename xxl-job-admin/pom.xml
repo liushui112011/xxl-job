@@ -108,10 +108,17 @@
 							<directory>${project.build.directory}</directory>
 							<include>${project.build.finalName}.jar</include>
 						</resource>
+						<resource>
+							<directory>src/main/resources</directory>
+							<filtering>true</filtering>
+							<includes>
+								<include>*.properties</include>
+							</includes>
+						</resource>
 					</resources>
 				</configuration>
-			</plugin>
-		</plugins>
-	</build>
+                        </plugin>
+                    </plugins>
+                </build>
 
-</project>
+            </project>
