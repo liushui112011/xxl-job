@@ -109,7 +109,7 @@ public class JobInfoController {
 
 	@RequestMapping("/addJob")
 	@ResponseBody
-	public JSONObject addJob(@RequestBody JSONObject jobInfo) {
+	public ReturnT<String> addJob(@RequestBody JSONObject jobInfo) {
 		return xxlJobService.addJob(jobInfo);
 	}
 	

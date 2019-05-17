@@ -43,7 +43,8 @@ public interface XxlJobService {
 	 * @param
 	 * @return
 	 */
-	 public JSONObject addJob(JSONObject job);
+
+	 public ReturnT<String> addJob(JSONObject job);
 
 	/**
 	 * update job, update quartz-cron if started
@@ -53,6 +54,15 @@ public interface XxlJobService {
 	 */
 	public ReturnT<String> update(XxlJobInfo jobInfo);
 
+	/**
+	 * 针对JourneyBuilder， job添加
+	 * update  job, default quartz stop
+	 *
+	 * @param
+	 * @return
+	 */
+
+	public ReturnT<String> updateJob(JSONObject job);
 	/**
 	 * remove job, unbind quartz
 	 *

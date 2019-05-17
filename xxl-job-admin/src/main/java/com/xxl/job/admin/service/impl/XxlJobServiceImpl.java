@@ -1,5 +1,6 @@
 package com.xxl.job.admin.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.xxl.job.admin.core.conf.XxlJobAdminConfig;
 import com.xxl.job.admin.core.model.XxlJobGroup;
@@ -136,44 +137,54 @@ public class XxlJobServiceImpl implements XxlJobService {
 	}
 
 	@Override
-	public JSONObject addJob(JSONObject job) {
+	public ReturnT<String> addJob(JSONObject job) {
+
+
 		//获取请求参数
-		String controllerCode = job.getString("executor");
-		String cronExprress = job.getString("cronExpress");
-		String jobName = job.getString("jobName");
-		String params  = job.getString("params");
+		String controllerCode = job.getString(I18nUtil.getString("addJob_executor"));
+		String cronExprress = job.getString(I18nUtil.getString("addJob_cronExpress"));
+		String jobName = job.getString(I18nUtil.getString("addJob_jobName"));
+		String params  = job.getString(I18nUtil.getString("addJob_params"));
+		XxlJobGroup group = xxlJobGroupDao.selectByName(controllerCode);
 
 		if (params == null){
-			return new ReturnJson(ReturnJson.FAIL_CODE,(I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_executorparam")) ).toJson();
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_choose")+I18nUtil.getString("jobinfo_field_executorparam")) );
 		}
 
-		XxlJobGroup group = xxlJobGroupDao.selectByName(controllerCode);
 		if (group == null) {
-			return new ReturnJson(ReturnJson.FAIL_CODE, (I18nUtil.getString("system_please_choose")+I18nUtil.getString("jobinfo_field_jobgroup"))).toJson();
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_choose")+I18nUtil.getString("jobinfo_field_jobgroup")) );
 		}
 		if (!CronExpression.isValidExpression(cronExprress)) {
-			return new ReturnJson(ReturnJson.FAIL_CODE, I18nUtil.getString("jobinfo_field_cron_unvalid") ).toJson();
+			return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("jobinfo_field_cron_unvalid") );
+
 		}
 		if (jobName==null ||jobName.trim().length()==0) {
-			return new ReturnJson(ReturnJson.FAIL_CODE, (I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_jobdesc")) ).toJson();
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_jobdesc")) );
 		}
 		if (XxlJobAdminConfig.getAdminConfig().getAuthor() ==null || XxlJobAdminConfig.getAdminConfig().getAuthor().trim().length()==0) {
-			return new ReturnJson(ReturnJson.FAIL_CODE, (I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_author")) ).toJson();
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_author")) );
+
 		}
 		if (ExecutorRouteStrategyEnum.match(XxlJobAdminConfig.getAdminConfig().getExecutorRouteStrategy(), null) == null) {
-			return new ReturnJson(ReturnJson.FAIL_CODE, (I18nUtil.getString("jobinfo_field_executorRouteStrategy")+I18nUtil.getString("system_unvalid")) ).toJson();
+
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_executorRouteStrategy")+I18nUtil.getString("system_unvalid")) );
+
+
 		}
 		if (ExecutorBlockStrategyEnum.match(XxlJobAdminConfig.getAdminConfig().getExecutorBlockStrategy(), null) == null) {
-			return new ReturnJson(ReturnJson.FAIL_CODE, (I18nUtil.getString("jobinfo_field_executorBlockStrategy")+I18nUtil.getString("system_unvalid")) ).toJson();
+
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_executorBlockStrategy")+I18nUtil.getString("system_unvalid")) );
+
 		}
 		if (GlueTypeEnum.match(XxlJobAdminConfig.getAdminConfig().getGlueType()) == null) {
-			return new ReturnJson(ReturnJson.FAIL_CODE, (I18nUtil.getString("jobinfo_field_gluetype")+I18nUtil.getString("system_unvalid")) ).toJson();
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input")+"JobHandler") );
+
 		}
 		//此处将 Handler 同 执行器名称设定为同一个
 		if (GlueTypeEnum.BEAN==GlueTypeEnum.match(XxlJobAdminConfig.getAdminConfig().getGlueType()) && (controllerCode==null || controllerCode.trim().length()==0) ) {
-			return new ReturnJson(ReturnJson.FAIL_CODE, (I18nUtil.getString("system_please_input")+"JobHandler") ).toJson();
-		}
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input")+"JobHandler") );
 
+		}
 
 		//生成JobInfo所需信息
 		XxlJobInfo jobInfo = new XxlJobInfo();
@@ -191,14 +202,12 @@ public class XxlJobServiceImpl implements XxlJobService {
 		// add in db
 		xxlJobInfoDao.save(jobInfo);
 		if (jobInfo.getId() < 1) {
-			return new ReturnJson(ReturnJson.FAIL_CODE, (I18nUtil.getString("jobinfo_field_add")+I18nUtil.getString("system_fail"))).toJson();
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_add")+I18nUtil.getString("system_fail")) );
+
 		}
 		//返回的msg
-		return new ReturnJson(String.valueOf(jobInfo.getId())).toJson();
+		return new ReturnT<String>(String.valueOf(jobInfo.getId()));
 	}
-
-
-
 
 
 	private boolean isNumeric(String str){
@@ -293,6 +302,73 @@ public class XxlJobServiceImpl implements XxlJobService {
 
 		return ReturnT.SUCCESS;
 	}
+
+
+	@Override
+	public ReturnT<String> updateJob(JSONObject job) {
+		//获取请求参数
+		String jobID = job.getString(I18nUtil.getString("upateJob_jobID"));
+		String controllerCode = job.getString(I18nUtil.getString("addJob_executor"));
+		String cronExprress = job.getString(I18nUtil.getString("addJob_cronExpress"));
+		String jobName = job.getString(I18nUtil.getString("addJob_jobName"));
+		String params  = job.getString(I18nUtil.getString("addJob_params"));
+
+
+		// valid
+
+		if (jobID == null) {
+			return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("jobID_is_null") );
+		}
+		if (!CronExpression.isValidExpression(cronExprress)) {
+			return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("jobinfo_field_cron_unvalid") );
+		}
+		if (jobName==null || jobName.trim().length()==0) {
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_jobdesc")) );
+		}
+		if (XxlJobAdminConfig.getAdminConfig().getAuthor()==null || XxlJobAdminConfig.getAdminConfig().getAuthor().trim().length()==0) {
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_author")) );
+		}
+		if (ExecutorRouteStrategyEnum.match(XxlJobAdminConfig.getAdminConfig().getExecutorRouteStrategy(), null) == null) {
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_executorRouteStrategy")+I18nUtil.getString("system_unvalid")) );
+		}
+		if (ExecutorBlockStrategyEnum.match(XxlJobAdminConfig.getAdminConfig().getExecutorBlockStrategy(), null) == null) {
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_executorBlockStrategy")+I18nUtil.getString("system_unvalid")) );
+		}
+
+		XxlJobGroup group = xxlJobGroupDao.selectByName(controllerCode);
+
+		// group valid
+		XxlJobGroup jobGroup = xxlJobGroupDao.load(group.getId());
+		if (jobGroup == null) {
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_jobgroup")+I18nUtil.getString("system_unvalid")) );
+		}
+
+		// stage job info
+		XxlJobInfo exists_jobInfo = xxlJobInfoDao.loadById(Integer.parseInt(jobID));
+		if (exists_jobInfo == null) {
+			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_id")+I18nUtil.getString("system_not_found")) );
+		}
+
+		exists_jobInfo.setJobGroup(group.getId());
+		exists_jobInfo.setJobCron(cronExprress);
+		exists_jobInfo.setJobDesc(jobName);
+		exists_jobInfo.setExecutorParam(params);
+		xxlJobInfoDao.update(exists_jobInfo);
+
+
+		// update quartz-cron if started
+		try {
+			String qz_name = String.valueOf(exists_jobInfo.getId());
+			XxlJobDynamicScheduler.updateJobCron(qz_name, exists_jobInfo.getJobCron());
+		} catch (SchedulerException e) {
+			logger.error(e.getMessage(), e);
+			return ReturnT.FAIL;
+		}
+
+		return ReturnT.SUCCESS;
+	}
+
+
 
 	@Override
 	public ReturnT<String> remove(int id) {

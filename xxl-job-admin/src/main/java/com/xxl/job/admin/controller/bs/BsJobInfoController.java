@@ -42,26 +42,29 @@ public class BsJobInfoController {
 	@Resource
 	private XxlJobService xxlJobService;
 
+
+
+
 	@PermissionLimit(limit = false)
 	@RequestMapping("/addJob")
 	@ResponseBody
-	public JSONObject addJob(@RequestBody JSONObject jobInfo) {
+	public ReturnT<String> addJob(@RequestBody JSONObject jobInfo) {
 		return xxlJobService.addJob(jobInfo);
 	}
 
 	@RequestMapping("/triggerJob")
 	@ResponseBody
 	@PermissionLimit(limit = false)
-	public JSONObject triggerJob(@RequestBody  JSONObject jobInfo ) {
+	public ReturnT<String> triggerJob(@RequestBody  JSONObject jobInfo ) {
 		String jobId = jobInfo.getString("jobID");
 		String params = jobInfo.getString("params");
 		// force cover job param
 
 		JobTriggerPoolHelper.trigger(Integer.parseInt(jobId), TriggerTypeEnum.MANUAL, -1, null, params);
-		return new ReturnJson(ReturnJson.SUCCESS_CODE,null).toJson();
+		return ReturnT.SUCCESS;
 	}
 
-	@RequestMapping("/start")
+	@RequestMapping("/startJob")
 	@ResponseBody
 	@PermissionLimit(limit = false)
 	public ReturnT<String> start(@RequestBody JSONObject jobID) {
@@ -69,10 +72,18 @@ public class BsJobInfoController {
 
 	}
 
-	@RequestMapping("/stop")
+	@RequestMapping("/stopJob")
 	@ResponseBody
 	@PermissionLimit(limit = false)
 	public ReturnT<String> pause(@RequestBody JSONObject jobID) {
 		return xxlJobService.stop(Integer.parseInt(jobID.getString("jobID")));
 	}
+
+	@PermissionLimit(limit = false)
+	@RequestMapping("/updateJob")
+	@ResponseBody
+	public ReturnT<String> updateJob(@RequestBody JSONObject jobInfo) {
+		return xxlJobService.updateJob(jobInfo);
+	}
+
 }
